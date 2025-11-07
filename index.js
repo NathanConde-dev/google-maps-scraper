@@ -19,12 +19,8 @@ app.get("/search", async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: "/usr/bin/google-chrome", // Caminho para o Chrome instalado
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--lang=pt-BR", // Define o idioma do navegador como português
-      ],
+      executablePath: "/usr/bin/google-chrome",
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--lang=pt-BR"],
     });
 
     const page = await browser.newPage();
@@ -35,7 +31,9 @@ app.get("/search", async (req, res) => {
     });
 
     // Gera a URL de pesquisa do Google Maps
-    const url = `https://www.google.com/maps/search/${encodeURIComponent(searchTerm)}`;
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(
+      searchTerm
+    )}`;
     await page.goto(url, { waitUntil: "networkidle2" });
 
     console.log(`Pesquisando: ${searchTerm}`);
@@ -56,17 +54,47 @@ app.get("/search", async (req, res) => {
     }
 
     // Extrair os websites dos resultados
-    const websites = await page.evaluate(() => {
-      const elements = document.querySelectorAll('[data-value="Website"]');
-      return Array.from(elements).map((el) => el.getAttribute("href"));
+    const data = await page.evaluate(() => {
+      let elements = document.querySelectorAll(".lI9IFe");
+
+      return Array.from(elements)
+        .map((container) => {
+          let website =
+            container.querySelector('a[aria-label^="Acessar o site"]')?.href ||
+            null;
+          let phone = container.querySelector(".UsdlK")?.innerText || null;
+
+          let name =
+            container.querySelector(".qBF1Pd.fontHeadlineSmall")?.innerText ||
+            null;
+
+          return { name, website, phone };
+        })
+        .filter(
+          (container) =>
+            container.website !== null &&
+            container.phone !== null &&
+            container.website !== "" &&
+            container.phone !== "" &&
+            container.website !== undefined &&
+            container.phone !== undefined &&
+            !container.website.includes("wa.me") &&
+            !container.website.includes("facebook.com") &&
+            !container.website.includes("instagram.com") &&
+            !container.website.includes("twitter.com") &&
+            !container.website.includes("linkedin.com") &&
+            !container.website.includes("youtube.com") &&
+            !container.website.includes("tiktok.com") &&
+            !container.website.includes("pinterest.com") &&
+            !container.website.includes("reddit.com")
+        );
     });
 
     await browser.close();
 
-    // Retorna os resultados como JSON
     return res.json({
       term: searchTerm,
-      websites,
+      data,
     });
   } catch (error) {
     console.error("Erro ao realizar a pesquisa:", error);

@@ -1,5 +1,7 @@
 const { Readable, getStreamError, isStreamx, isDisturbed } = require('streamx')
 
+const readableKind = Symbol.for('bare.stream.readable.kind')
+
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
@@ -96,7 +98,11 @@ exports.ReadableStreamDefaultController = class ReadableStreamDefaultController 
 }
 
 // https://streams.spec.whatwg.org/#readablestream
-exports.ReadableStream = class ReadableStream {
+class ReadableStream {
+  static get [readableKind]() {
+    return 0 // Compatibility version
+  }
+
   constructor(underlyingSource = {}, queuingStrategy) {
     if (isStreamx(underlyingSource)) {
       this._stream = underlyingSource
@@ -120,6 +126,10 @@ exports.ReadableStream = class ReadableStream {
         this._stream._read = read.bind(this, pull.bind(this, controller))
       }
     }
+  }
+
+  get [readableKind]() {
+    return ReadableStream[readableKind]
   }
 
   getReader() {
@@ -175,6 +185,8 @@ function defaultSize() {
   return 1
 }
 
+exports.ReadableStream = ReadableStream
+
 // https://streams.spec.whatwg.org/#countqueuingstrategy
 exports.CountQueuingStrategy = class CountQueuingStrategy {
   constructor(opts = {}) {
@@ -199,6 +211,16 @@ exports.ByteLengthQueuingStrategy = class ByteLengthQueuingStrategy {
   size(chunk) {
     return chunk.byteLength
   }
+}
+
+exports.isReadableStream = function isReadableStream(value) {
+  if (value instanceof ReadableStream) return true
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value[readableKind] === ReadableStream[readableKind]
+  )
 }
 
 // https://streams.spec.whatwg.org/#is-readable-stream-disturbed

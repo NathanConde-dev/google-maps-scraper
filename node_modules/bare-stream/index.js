@@ -115,7 +115,7 @@ exports.Writable = class Writable extends stream.Writable {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', () => cb(null))
+    if (cb) this.once('finish', () => cb(null))
 
     return result
   }
@@ -205,7 +205,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', () => cb(null))
+    if (cb) this.once('finish', () => cb(null))
 
     return result
   }
@@ -287,7 +287,7 @@ exports.Transform = class Transform extends stream.Transform {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', () => cb(null))
+    if (cb) this.once('finish', () => cb(null))
 
     return result
   }
